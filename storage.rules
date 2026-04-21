@@ -1,0 +1,29 @@
+// storage.rules
+// Déployez avec : firebase deploy --only storage
+
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── Photos de profil ──────────────────────────────────────────────
+    match /profile_photos/{userId}.jpg {
+      // Lecture : publique (pour affichage dans l'app)
+      allow read: if request.auth != null;
+
+      // Écriture : uniquement son propre fichier
+      allow write: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.size < 2 * 1024 * 1024      // max 2 MB
+        && request.resource.contentType.matches('image/.*');
+
+      // Suppression : uniquement son propre fichier
+      allow delete: if request.auth != null
+        && request.auth.uid == userId;
+    }
+
+    // ── Tout autre fichier : refusé ───────────────────────────────────
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

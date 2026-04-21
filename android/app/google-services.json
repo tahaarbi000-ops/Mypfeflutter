@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "895056519634",
+    "firebase_url": "https://pfe2026-7fd35-default-rtdb.firebaseio.com",
+    "project_id": "pfe2026-7fd35",
+    "storage_bucket": "pfe2026-7fd35.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:895056519634:android:aa05c167f24f76bf5e680b",
+        "android_client_info": {
+          "package_name": "com.example.first_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCHe-jNMzq2DuqGb44msnOKTNLixmE4aaQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:895056519634:android:c2b05e2b67e83da65e680b",
+        "android_client_info": {
+          "package_name": "com.example.transport_tunisia"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCHe-jNMzq2DuqGb44msnOKTNLixmE4aaQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

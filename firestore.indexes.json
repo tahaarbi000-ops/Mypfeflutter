@@ -1,0 +1,37 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "tickets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "clientId", "order": "ASCENDING" },
+        { "fieldPath": "dateAchat", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "tickets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "scanne", "order": "ASCENDING" },
+        { "fieldPath": "dateScan", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "tickets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "trajetId", "order": "ASCENDING" },
+        { "fieldPath": "scanne", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "trajets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "controleurId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

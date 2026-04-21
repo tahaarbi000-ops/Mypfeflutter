@@ -1,0 +1,104 @@
+// firestore.rules
+// Déployez avec : firebase deploy --only firestore:rules
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Fonctions helpers ─────────────────────────────────────────────
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return request.auth.uid == uid;
+    }
+
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isClient() {
+      return isAuthenticated() && getUserRole() == 'client';
+    }
+
+    function isControleur() {
+      return isAuthenticated() && getUserRole() == 'controleur';
+    }
+
+    // ── Collection : users ────────────────────────────────────────────
+    match /users/{userId} {
+      // Lecture : uniquement son propre profil
+      allow read: if isAuthenticated() && isOwner(userId);
+
+      // Création : lors de l'inscription (l'uid doit correspondre)
+      allow create: if isAuthenticated() && isOwner(userId);
+
+      // Mise à jour : uniquement ses propres données
+      // (email et role ne peuvent pas être modifiés)
+      allow update: if isAuthenticated()
+        && isOwner(userId)
+        && !request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['email', 'role', 'id']);
+
+      // Suppression : interdite
+      allow delete: if false;
+    }
+
+    // ── Collection : trajets ──────────────────────────────────────────
+    match /trajets/{trajetId} {
+      // Lecture : tous les utilisateurs authentifiés
+      allow read: if isAuthenticated();
+
+      // Création : contrôleurs uniquement
+      allow create: if isControleur()
+        && request.resource.data.controleurId == request.auth.uid;
+
+      // Mise à jour : contrôleur propriétaire du trajet OU
+      //   client qui décrémente uniquement placesRestantes (achat billet)
+      allow update: if isAuthenticated() && (
+        // Contrôleur propriétaire : peut tout modifier
+        (isControleur() && resource.data.controleurId == request.auth.uid)
+        ||
+        // Client : peut uniquement décrémenter placesRestantes de 1
+        (isClient()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['placesRestantes'])
+          && request.resource.data.placesRestantes == resource.data.placesRestantes - 1
+          && resource.data.placesRestantes > 0)
+      );
+
+      // Suppression : contrôleur propriétaire uniquement
+      allow delete: if isControleur()
+        && resource.data.controleurId == request.auth.uid;
+    }
+
+    // ── Collection : tickets ──────────────────────────────────────────
+    match /tickets/{ticketId} {
+      // Lecture : client propriétaire OU contrôleur (pour scanner)
+      allow read: if isAuthenticated() && (
+        resource.data.clientId == request.auth.uid || isControleur()
+      );
+
+      // Création : client uniquement, pour lui-même
+      allow create: if isClient()
+        && request.resource.data.clientId == request.auth.uid
+        && request.resource.data.statut == 'valide'
+        && request.resource.data.scanne == false;
+
+      // Mise à jour :
+      //   - Contrôleur peut marquer comme scanné/utilisé
+      //   - Le client ne peut PAS modifier ses tickets
+      allow update: if isControleur()
+        && request.resource.data.diff(resource.data)
+            .affectedKeys().hasOnly(['statut', 'scanne', 'dateScan']);
+
+      // Suppression : interdite
+      allow delete: if false;
+    }
+
+    // ── Toute autre collection : refusée ─────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
