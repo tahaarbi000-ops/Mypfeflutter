@@ -27,31 +27,36 @@ class DefaultFirebaseOptions {
     }
   }
 
-  // 🔴 Remplacez par vos valeurs Firebase
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'YOUR_ANDROID_API_KEY',
-    appId: 'YOUR_ANDROID_APP_ID',
-    messagingSenderId: 'YOUR_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
+    apiKey: 'AIzaSyCHe-jNMzq2DuqGb44msnOKTNLixmE4aaQ',
+    appId: '1:895056519634:android:c2b05e2b67e83da65e680b',
+    messagingSenderId: '895056519634',
+    projectId: 'pfe2026-7fd35',
+    databaseURL: 'https://pfe2026-7fd35-default-rtdb.firebaseio.com',
+    storageBucket: 'pfe2026-7fd35.firebasestorage.app',
   );
 
+  // 🔴 Remplacez par vos valeurs Firebase
+
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'YOUR_IOS_API_KEY',
-    appId: 'YOUR_IOS_APP_ID',
-    messagingSenderId: 'YOUR_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
-    iosClientId: 'YOUR_IOS_CLIENT_ID',
-    iosBundleId: 'com.yourcompany.transportTunisia',
+    apiKey: 'AIzaSyD-1HUTNp-KWNCPc3sHpM3_C35pBd-MsPs',
+    appId: '1:895056519634:ios:a8a5bc35628168d85e680b',
+    messagingSenderId: '895056519634',
+    projectId: 'pfe2026-7fd35',
+    databaseURL: 'https://pfe2026-7fd35-default-rtdb.firebaseio.com',
+    storageBucket: 'pfe2026-7fd35.firebasestorage.app',
+    iosBundleId: 'com.example.transportTunisia',
   );
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'YOUR_WEB_API_KEY',
-    appId: 'YOUR_WEB_APP_ID',
-    messagingSenderId: 'YOUR_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
-    authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
+    apiKey: 'AIzaSyDoldp_Oi3G9w0tTlsYe6YGAwh-W4TmxL4',
+    appId: '1:895056519634:web:ee25e75d28f0d1d95e680b',
+    messagingSenderId: '895056519634',
+    projectId: 'pfe2026-7fd35',
+    authDomain: 'pfe2026-7fd35.firebaseapp.com',
+    databaseURL: 'https://pfe2026-7fd35-default-rtdb.firebaseio.com',
+    storageBucket: 'pfe2026-7fd35.firebasestorage.app',
+    measurementId: 'G-R0EPTNM410',
   );
+
 }
