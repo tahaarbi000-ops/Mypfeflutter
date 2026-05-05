@@ -1,4 +1,4 @@
-# 🚌 TunisTransport — Flutter + Firebase
+# 🚌 TuniMove — Flutter + Firebase
 
 Application mobile de transport en Tunisie avec **Firebase Auth**, **Cloud Firestore** et **Firebase Storage**.
 
@@ -34,7 +34,7 @@ dart --version      # >= 3.0.0
 ### 2. Créer le projet Firebase
 
 1. Aller sur [console.firebase.google.com](https://console.firebase.google.com)
-2. Créer un nouveau projet **TunisTransport**
+2. Créer un nouveau projet **TuniMove**
 3. Activer **Authentication > Email/Password**
 4. Créer la base **Firestore** (mode production)
 5. Activer **Storage**

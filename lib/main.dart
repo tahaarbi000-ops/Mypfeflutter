@@ -13,21 +13,25 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const TunisTransportApp());
+  runApp(const TuniMoveApp());
 }
 
-class TunisTransportApp extends StatelessWidget {
-  const TunisTransportApp({super.key});
+class TuniMoveApp extends StatelessWidget {
+  const TuniMoveApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => AppProvider(),
       child: MaterialApp(
-        title: 'TunisTransport',
+        title: 'TuniMove',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.theme,
-        home: const AuthGate(),
+        // Register '/' so LoginPage can navigate back to AuthGate
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const AuthGate(),
+        },
       ),
     );
   }
@@ -40,6 +44,7 @@ class AuthGate extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.watch<AppProvider>();
 
+    // Show spinner while Firebase + Firestore are initializing
     if (provider.loading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),

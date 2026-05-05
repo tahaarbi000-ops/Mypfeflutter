@@ -17,6 +17,7 @@ class AppProvider extends ChangeNotifier {
   List<TicketModel> _tickets = [];
   String _regionFiltre = 'Toutes';
   bool _loading = false;
+  bool _initializing = true; // true until first auth event resolves
 
   StreamSubscription? _trajetsSub;
   StreamSubscription? _ticketsSub;
@@ -25,7 +26,7 @@ class AppProvider extends ChangeNotifier {
   // ─── GETTERS ────────────────────────────────────────────────────────
   UserModel? get currentUser => _currentUser;
   List<TrajetModel> get trajets => _trajets;
-  bool get loading => _loading;
+  bool get loading => _loading || _initializing;
   bool get isLoggedIn => _currentUser != null;
   bool get isClient => _currentUser?.role == 'client';
   bool get isControleur => _currentUser?.role == 'controleur';
@@ -45,15 +46,54 @@ class AppProvider extends ChangeNotifier {
 
   void _listenToAuth() {
     _authSub = _authService.authStateChanges.listen((firebaseUser) async {
+      debugPrint('🔐 Auth state changed: ${firebaseUser?.uid ?? "null (logged out)"}');
+
       if (firebaseUser != null) {
-        _currentUser = await _authService.getUserById(firebaseUser.uid);
-        if (_currentUser != null) _subscribeToData();
+        // Retry up to 3 times — Firestore can be slow on cold start
+        UserModel? user;
+        for (int attempt = 1; attempt <= 3; attempt++) {
+          try {
+            debugPrint('📦 Fetching Firestore user, attempt $attempt...');
+            user = await _authService.getUserById(firebaseUser.uid);
+            if (user != null) {
+              debugPrint('✅ User loaded: ${user.role}');
+              break;
+            } else {
+              debugPrint('⚠️ getUserById returned null on attempt $attempt');
+            }
+          } catch (e) {
+            debugPrint('❌ getUserById error on attempt $attempt: $e');
+          }
+          if (attempt < 3) {
+            await Future.delayed(Duration(milliseconds: 500 * attempt));
+          }
+        }
+
+        if (user != null) {
+          _currentUser = user;
+          _subscribeToData();
+        } else {
+          // Firestore doc doesn't exist — sign out to avoid stuck state
+          debugPrint('🚫 No Firestore doc found after 3 attempts. Signing out.');
+          _currentUser = null;
+          await _authService.signOut();
+        }
       } else {
         _currentUser = null;
         _cancelSubscriptions();
         _trajets = [];
         _tickets = [];
       }
+
+      if (_initializing) {
+        _initializing = false;
+        debugPrint('🏁 Initialization complete. isLoggedIn=$isLoggedIn');
+      }
+
+      notifyListeners();
+    }, onError: (e) {
+      debugPrint('🔴 Auth stream error: $e');
+      if (_initializing) _initializing = false;
       notifyListeners();
     });
   }
@@ -97,9 +137,7 @@ class AppProvider extends ChangeNotifier {
   }
 
   List<TicketModel> get mesTickets => _tickets;
-
-  List<TicketModel> get ticketsScannesToday =>
-      _tickets.where((t) => t.scanne).toList();
+  List<TicketModel> get ticketsScannesToday => _tickets.where((t) => t.scanne).toList();
 
   TrajetModel? get trajetActuel {
     if (_currentUser == null) return null;
@@ -107,9 +145,7 @@ class AppProvider extends ChangeNotifier {
       return _trajets.firstWhere(
         (t) => t.controleurId == _currentUser!.id && t.statut == 'en_cours',
       );
-    } catch (_) {
-      return null;
-    }
+    } catch (_) { return null; }
   }
 
   TrajetModel? getTrajetById(String id) {

@@ -3,12 +3,12 @@ class TrajetModel {
   String depart;
   String destination;
   String region;
-  String date;
+  String date; // may be empty if added from admin
   String heureDepart;
   String heureArrivee;
   double prix;
-  String statut; // 'planifie', 'en_cours', 'termine'
-  String controleurId;
+  String statut; // 'planifie', 'en_cours', 'termine', 'actif'
+  String controleurId; // may be empty if not yet assigned
   int placesTotal;
   int placesRestantes;
 
@@ -28,34 +28,34 @@ class TrajetModel {
   });
 
   Map<String, dynamic> toMap() => {
-    'id': id,
-    'depart': depart,
-    'destination': destination,
-    'region': region,
-    'date': date,
-    'heureDepart': heureDepart,
-    'heureArrivee': heureArrivee,
-    'prix': prix,
-    'statut': statut,
-    'controleurId': controleurId,
-    'placesTotal': placesTotal,
-    'placesRestantes': placesRestantes,
-  };
+        'id': id,
+        'depart': depart,
+        'destination': destination,
+        'region': region,
+        'date': date,
+        'heureDepart': heureDepart,
+        'heureArrivee': heureArrivee,
+        'prix': prix,
+        'statut': statut,
+        'controleurId': controleurId,
+        'placesTotal': placesTotal,
+        'placesRestantes': placesRestantes,
+      };
 
   factory TrajetModel.fromMap(Map<String, dynamic> map) => TrajetModel(
-    id: map['id'],
-    depart: map['depart'],
-    destination: map['destination'],
-    region: map['region'],
-    date: map['date'],
-    heureDepart: map['heureDepart'],
-    heureArrivee: map['heureArrivee'],
-    prix: (map['prix'] as num).toDouble(),
-    statut: map['statut'],
-    controleurId: map['controleurId'],
-    placesTotal: map['placesTotal'],
-    placesRestantes: map['placesRestantes'],
-  );
+        id: map['id'] as String? ?? '',
+        depart: map['depart'] as String? ?? '',
+        destination: map['destination'] as String? ?? '',
+        region: map['region'] as String? ?? '',
+        date: map['date'] as String? ?? '',
+        heureDepart: map['heureDepart'] as String? ?? '',
+        heureArrivee: map['heureArrivee'] as String? ?? '',
+        prix: (map['prix'] as num?)?.toDouble() ?? 0.0,
+        statut: map['statut'] as String? ?? 'actif',
+        controleurId: map['controleurId'] as String? ?? '',
+        placesTotal: (map['placesTotal'] as num?)?.toInt() ?? 0,
+        placesRestantes: (map['placesRestantes'] as num?)?.toInt() ?? 0,
+      );
 }
 
 class TicketModel {
@@ -80,24 +80,24 @@ class TicketModel {
   });
 
   Map<String, dynamic> toMap() => {
-    'id': id,
-    'trajetId': trajetId,
-    'clientId': clientId,
-    'clientNom': clientNom,
-    'statut': statut,
-    'dateAchat': dateAchat,
-    'prix': prix,
-    'scanne': scanne,
-  };
+        'id': id,
+        'trajetId': trajetId,
+        'clientId': clientId,
+        'clientNom': clientNom,
+        'statut': statut,
+        'dateAchat': dateAchat,
+        'prix': prix,
+        'scanne': scanne,
+      };
 
   factory TicketModel.fromMap(Map<String, dynamic> map) => TicketModel(
-    id: map['id'],
-    trajetId: map['trajetId'],
-    clientId: map['clientId'],
-    clientNom: map['clientNom'],
-    statut: map['statut'],
-    dateAchat: map['dateAchat'],
-    prix: (map['prix'] as num).toDouble(),
-    scanne: map['scanne'] ?? false,
-  );
+        id: map['id'] as String? ?? '',
+        trajetId: map['trajetId'] as String? ?? '',
+        clientId: map['clientId'] as String? ?? '',
+        clientNom: map['clientNom'] as String? ?? '',
+        statut: map['statut'] as String? ?? 'valide',
+        dateAchat: map['dateAchat'] as String? ?? '',
+        prix: (map['prix'] as num?)?.toDouble() ?? 0.0,
+        scanne: map['scanne'] as bool? ?? false,
+      );
 }

@@ -17,7 +17,6 @@ class _InscriptionPageState extends State<InscriptionPage> {
   final _telCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   final _confirmPassCtrl = TextEditingController();
-  String _role = 'client';
   bool _obscure = true;
 
   @override
@@ -39,11 +38,10 @@ class _InscriptionPageState extends State<InscriptionPage> {
           email: _emailCtrl.text.trim(),
           telephone: _telCtrl.text.trim(),
           motDePasse: _passCtrl.text,
-          role: _role,
+          role: 'client', // always client
         );
     if (!mounted) return;
     if (error != null) {
-      print(error);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(error),
         backgroundColor: AppTheme.error,
@@ -55,8 +53,8 @@ class _InscriptionPageState extends State<InscriptionPage> {
         backgroundColor: AppTheme.success,
         behavior: SnackBarBehavior.floating,
       ));
-      Navigator.pop(context);
-      // AuthGate redirige automatiquement via Firebase Auth stream
+      // Pop back to login, AuthGate will handle navigation
+      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
     }
   }
 
@@ -77,45 +75,49 @@ class _InscriptionPageState extends State<InscriptionPage> {
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-                color: Colors.white, borderRadius: BorderRadius.circular(24)),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text('Inscription',
-                      style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textDark)),
-                  const SizedBox(height: 20),
-                  // Role toggle
-                  Container(
-                    decoration: BoxDecoration(
-                        color: AppTheme.background,
-                        borderRadius: BorderRadius.circular(12)),
-                    child: Row(children: [
-                      _roleBtn('client', 'Client', Icons.person),
-                      _roleBtn('controleur', 'Contrôleur', Icons.badge),
-                    ]),
+                  const Text(
+                    'Inscription',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textDark,
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   Row(children: [
                     Expanded(
-                        child: _field(
-                            _prenomCtrl, 'Prénom', Icons.person_outline)),
+                      child:
+                          _field(_prenomCtrl, 'Prénom', Icons.person_outline),
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
-                        child: _field(_nomCtrl, 'Nom', Icons.person_outline)),
+                      child: _field(_nomCtrl, 'Nom', Icons.person_outline),
+                    ),
                   ]),
                   const SizedBox(height: 12),
-                  _field(_emailCtrl, 'Email', Icons.email_outlined,
-                      type: TextInputType.emailAddress,
-                      validator: (v) =>
-                          !v!.contains('@') ? 'Email invalide' : null),
+                  _field(
+                    _emailCtrl,
+                    'Email',
+                    Icons.email_outlined,
+                    type: TextInputType.emailAddress,
+                    validator: (v) =>
+                        !v!.contains('@') ? 'Email invalide' : null,
+                  ),
                   const SizedBox(height: 12),
-                  _field(_telCtrl, 'Téléphone', Icons.phone_outlined,
-                      type: TextInputType.phone),
+                  _field(
+                    _telCtrl,
+                    'Téléphone',
+                    Icons.phone_outlined,
+                    type: TextInputType.phone,
+                  ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _passCtrl,
@@ -125,7 +127,8 @@ class _InscriptionPageState extends State<InscriptionPage> {
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
                         icon: Icon(
-                            _obscure ? Icons.visibility_off : Icons.visibility),
+                          _obscure ? Icons.visibility_off : Icons.visibility,
+                        ),
                         onPressed: () => setState(() => _obscure = !_obscure),
                       ),
                     ),
@@ -152,7 +155,10 @@ class _InscriptionPageState extends State<InscriptionPage> {
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 2))
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
                         : const Text("S'inscrire"),
                   ),
                 ],
@@ -164,34 +170,13 @@ class _InscriptionPageState extends State<InscriptionPage> {
     );
   }
 
-  Widget _roleBtn(String value, String label, IconData icon) {
-    final selected = _role == value;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _role = value),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: selected ? AppTheme.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(icon,
-                size: 18, color: selected ? Colors.white : AppTheme.textGrey),
-            const SizedBox(width: 6),
-            Text(label,
-                style: TextStyle(
-                    color: selected ? Colors.white : AppTheme.textGrey,
-                    fontWeight: FontWeight.w600)),
-          ]),
-        ),
-      ),
-    );
-  }
-
-  Widget _field(TextEditingController ctrl, String label, IconData icon,
-      {TextInputType? type, String? Function(String?)? validator}) {
+  Widget _field(
+    TextEditingController ctrl,
+    String label,
+    IconData icon, {
+    TextInputType? type,
+    String? Function(String?)? validator,
+  }) {
     return TextFormField(
       controller: ctrl,
       keyboardType: type,

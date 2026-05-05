@@ -21,7 +21,8 @@ class TicketDetailPage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.share_outlined),
-            onPressed: () => AppWidgets.showSuccess(context, 'Partage non disponible en démo'),
+            onPressed: () => AppWidgets.showSuccess(
+                context, 'Partage non disponible en démo'),
           ),
         ],
       ),
@@ -34,7 +35,12 @@ class TicketDetailPage extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 8))],
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8))
+                ],
               ),
               clipBehavior: Clip.antiAlias,
               child: Column(
@@ -51,25 +57,36 @@ class TicketDetailPage extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                          const Row(children: [
-                            Icon(Icons.directions_bus_rounded, color: Colors.white, size: 20),
-                            SizedBox(width: 8),
-                            Text('TunisTransport', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          ]),
-                          AppWidgets.statutBadge(ticket.statut),
-                        ]),
+                        Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Row(children: [
+                                Icon(Icons.directions_bus_rounded,
+                                    color: Colors.white, size: 20),
+                                SizedBox(width: 8),
+                                Text('TuniMove',
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold)),
+                              ]),
+                              AppWidgets.statutBadge(ticket.statut),
+                            ]),
                         const SizedBox(height: 20),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            _stopCol(trajet?.depart ?? '—', trajet?.heureDepart ?? '—', true),
+                            _stopCol(trajet?.depart ?? '—',
+                                trajet?.heureDepart ?? '—', true),
                             const Column(children: [
-                              Icon(Icons.arrow_forward_rounded, color: Colors.white70, size: 28),
+                              Icon(Icons.arrow_forward_rounded,
+                                  color: Colors.white70, size: 28),
                               SizedBox(height: 4),
-                              Text('Billet', style: TextStyle(color: Colors.white38, fontSize: 10)),
+                              Text('Billet',
+                                  style: TextStyle(
+                                      color: Colors.white38, fontSize: 10)),
                             ]),
-                            _stopCol(trajet?.destination ?? '—', trajet?.heureArrivee ?? '—', false),
+                            _stopCol(trajet?.destination ?? '—',
+                                trajet?.heureArrivee ?? '—', false),
                           ],
                         ),
                       ],
@@ -90,16 +107,29 @@ class TicketDetailPage extends StatelessWidget {
                             radius: 22,
                           ),
                           const SizedBox(width: 12),
-                          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            const Text('Passager', style: TextStyle(fontSize: 11, color: AppTheme.textGrey)),
-                            Text(ticket.clientNom, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                          ]),
+                          Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Passager',
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: AppTheme.textGrey)),
+                                Text(ticket.clientNom,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15)),
+                              ]),
                         ]),
                         const SizedBox(height: 16),
                         Row(children: [
-                          Expanded(child: _infoCol('Date', trajet?.date ?? ticket.dateAchat)),
-                          Expanded(child: _infoCol('Prix', '${ticket.prix.toStringAsFixed(3)} TND')),
-                          Expanded(child: _infoCol('Acheté le', ticket.dateAchat)),
+                          Expanded(
+                              child: _infoCol(
+                                  'Date', trajet?.date ?? ticket.dateAchat)),
+                          Expanded(
+                              child: _infoCol('Prix',
+                                  '${ticket.prix.toStringAsFixed(3)} TND')),
+                          Expanded(
+                              child: _infoCol('Acheté le', ticket.dateAchat)),
                         ]),
                         const SizedBox(height: 20),
                         // QR Code centré
@@ -117,24 +147,39 @@ class TicketDetailPage extends StatelessWidget {
                                   version: QrVersions.auto,
                                   size: 200,
                                   backgroundColor: Colors.white,
-                                  eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: AppTheme.secondary),
-                                  dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: AppTheme.secondary),
+                                  eyeStyle: const QrEyeStyle(
+                                      eyeShape: QrEyeShape.square,
+                                      color: AppTheme.secondary),
+                                  dataModuleStyle: const QrDataModuleStyle(
+                                      dataModuleShape: QrDataModuleShape.square,
+                                      color: AppTheme.secondary),
                                 )
                               else
                                 SizedBox(
-                                  width: 200, height: 200,
-                                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                                    Icon(Icons.qr_code, size: 64, color: Colors.grey[300]),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      ticket.statut == 'utilise' ? 'Ticket déjà utilisé' : 'Ticket expiré',
-                                      style: TextStyle(color: Colors.grey[400], fontSize: 14),
-                                    ),
-                                  ]),
+                                  width: 200,
+                                  height: 200,
+                                  child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.qr_code,
+                                            size: 64, color: Colors.grey[300]),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          ticket.statut == 'utilise'
+                                              ? 'Ticket déjà utilisé'
+                                              : 'Ticket expiré',
+                                          style: TextStyle(
+                                              color: Colors.grey[400],
+                                              fontSize: 14),
+                                        ),
+                                      ]),
                                 ),
                               const SizedBox(height: 12),
                               Text(
-                                ticket.id.toUpperCase().replaceRange(8, null, '...'),
+                                ticket.id
+                                    .toUpperCase()
+                                    .replaceRange(8, null, '...'),
                                 style: const TextStyle(
                                   fontFamily: 'monospace',
                                   fontSize: 13,
@@ -146,7 +191,8 @@ class TicketDetailPage extends StatelessWidget {
                                 const SizedBox(height: 8),
                                 const Text(
                                   'Présentez ce QR code au contrôleur',
-                                  style: TextStyle(fontSize: 12, color: AppTheme.textGrey),
+                                  style: TextStyle(
+                                      fontSize: 12, color: AppTheme.textGrey),
                                   textAlign: TextAlign.center,
                                 ),
                               ],
@@ -167,12 +213,18 @@ class TicketDetailPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Conditions d\'utilisation', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    const Text('Conditions d\'utilisation',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
-                    _conditionItem(Icons.info_outline, 'Ce billet est strictement personnel et non transférable.'),
-                    _conditionItem(Icons.qr_code, 'Le QR code est unique et ne peut être scanné qu\'une seule fois.'),
-                    _conditionItem(Icons.schedule, 'Présentez-vous 10 minutes avant le départ.'),
-                    _conditionItem(Icons.cancel_outlined, 'Annulation possible jusqu\'à 2h avant le départ.'),
+                    _conditionItem(Icons.info_outline,
+                        'Ce billet est strictement personnel et non transférable.'),
+                    _conditionItem(Icons.qr_code,
+                        'Le QR code est unique et ne peut être scanné qu\'une seule fois.'),
+                    _conditionItem(Icons.schedule,
+                        'Présentez-vous 10 minutes avant le départ.'),
+                    _conditionItem(Icons.cancel_outlined,
+                        'Annulation possible jusqu\'à 2h avant le départ.'),
                   ],
                 ),
               ),
@@ -185,21 +237,34 @@ class TicketDetailPage extends StatelessWidget {
 
   Widget _stopCol(String lieu, String heure, bool isDepart) {
     return Column(
-      crossAxisAlignment: isDepart ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+      crossAxisAlignment:
+          isDepart ? CrossAxisAlignment.start : CrossAxisAlignment.end,
       children: [
-        Text(isDepart ? 'DÉPART' : 'ARRIVÉE', style: const TextStyle(color: Colors.white54, fontSize: 10, letterSpacing: 1)),
+        Text(isDepart ? 'DÉPART' : 'ARRIVÉE',
+            style: const TextStyle(
+                color: Colors.white54, fontSize: 10, letterSpacing: 1)),
         const SizedBox(height: 4),
-        Text(lieu, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-        Text(heure, style: const TextStyle(color: AppTheme.primary, fontSize: 22, fontWeight: FontWeight.bold)),
+        Text(lieu,
+            style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 14)),
+        Text(heure,
+            style: const TextStyle(
+                color: AppTheme.primary,
+                fontSize: 22,
+                fontWeight: FontWeight.bold)),
       ],
     );
   }
 
   Widget _infoCol(String label, String value) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label, style: const TextStyle(fontSize: 11, color: AppTheme.textGrey)),
+      Text(label,
+          style: const TextStyle(fontSize: 11, color: AppTheme.textGrey)),
       const SizedBox(height: 2),
-      Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+      Text(value,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
     ]);
   }
 
@@ -209,7 +274,10 @@ class TicketDetailPage extends StatelessWidget {
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Icon(icon, size: 16, color: AppTheme.textGrey),
         const SizedBox(width: 8),
-        Expanded(child: Text(text, style: const TextStyle(fontSize: 12, color: AppTheme.textGrey, height: 1.4))),
+        Expanded(
+            child: Text(text,
+                style: const TextStyle(
+                    fontSize: 12, color: AppTheme.textGrey, height: 1.4))),
       ]),
     );
   }
