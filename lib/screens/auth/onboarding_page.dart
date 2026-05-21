@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../utils/app_theme.dart';
 import 'login_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -42,9 +43,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
     }
   }
 
-  void _goToLogin() {
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginPage()));
-  }
+  void _goToLogin() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool('seen_onboarding', true);
+
+  if (!mounted) return;
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(builder: (_) => const LoginPage()),
+  );
+}
 
   @override
   Widget build(BuildContext context) {

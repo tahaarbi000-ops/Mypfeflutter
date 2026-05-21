@@ -1,13 +1,30 @@
+
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/app_provider.dart';
-import '../../services/transport_api_service.dart';
+import '../../services/transport_service.dart';
 import '../../utils/app_theme.dart';
 import '../../models/trajet_model.dart';
 import '../shared/contact_page.dart';
 import '../shared/profil_page.dart';
 import 'mes_voyages_page.dart';
 import 'trajet_detail_page.dart';
+import 'reservation_bottom_sheet.dart';
+
+// Couleurs par société — cohérent avec le dashboard React
+const _societeColors = {
+  'SRTK': Color(0xFF0694A2),
+  'SRTTG': Color(0xFFE3A008),
+  'SRTGB': Color(0xFF057A55),
+  'SRTSO': Color(0xFF7E3AF2),
+  'SRTS': Color(0xFFE02424),
+  'SRTNM': Color(0xFFC27803),
+  'Transtu': Color(0xFF1A56DB),
+};
+
+Color _colorForSociete(String? societe) =>
+    _societeColors[societe] ?? AppTheme.primary;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -58,7 +75,7 @@ class _HomePageState extends State<HomePage> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TRAJETS TAB — now powered by the Transport API
+// ONGLET TRAJETS — alimenté par Firebase TransportService
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _TrajetsTab extends StatefulWidget {
@@ -70,31 +87,39 @@ class _TrajetsTab extends StatefulWidget {
 
 class _TrajetsTabState extends State<_TrajetsTab> {
   final _searchCtrl = TextEditingController();
+
   String _searchQuery = '';
-  String? _jourFiltre; // e.g. 'lundi'
-  double? _prixMax; // price filter
+  String?
+      _jourFiltre; // valeurs : 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'
+  double? _prixMax;
+  String? _societeFiltre;
   bool _showFilters = false;
 
-  List<TransportArret> _arrets = [];
+  // ── CORRIGÉ : List<Trajet> au lieu de List<TransportArret> ───────────────
+  List<Trajet> _trajets = [];
+  List<String> _societesDisponibles = [];
   bool _loading = false;
   String? _error;
 
-  // Days for filter chips
+  // ── CORRIGÉ : valeurs = codes Firestore ('Lun', 'Mar'…) ─────────────────
   static const _jours = [
     ('Tous', null),
-    ('Lun', 'lundi'),
-    ('Mar', 'mardi'),
-    ('Mer', 'mercredi'),
-    ('Jeu', 'jeudi'),
-    ('Ven', 'vendredi'),
-    ('Sam', 'samedi'),
-    ('Dim', 'dimanche'),
+    ('Lun', 'Lun'),
+    ('Mar', 'Mar'),
+    ('Mer', 'Mer'),
+    ('Jeu', 'Jeu'),
+    ('Ven', 'Ven'),
+    ('Sam', 'Sam'),
+    ('Dim', 'Dim'),
   ];
+
+  static const _prixOptions = [null, 5.0, 10.0, 20.0, 50.0];
 
   @override
   void initState() {
     super.initState();
     _fetchData();
+    _fetchSocietes();
   }
 
   @override
@@ -103,66 +128,65 @@ class _TrajetsTabState extends State<_TrajetsTab> {
     super.dispose();
   }
 
+  // ── Charger les noms de sociétés pour le filtre ──────────────────────────
+  Future<void> _fetchSocietes() async {
+    try {
+      final noms = await TransportService.fetchSocietesNoms();
+      if (mounted) setState(() => _societesDisponibles = noms);
+    } catch (_) {}
+  }
+
+  // ── Charger les trajets depuis Firestore ─────────────────────────────────
   Future<void> _fetchData() async {
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final response = await TransportApiService.fetchTransport(
+      // CORRIGÉ : response.data est maintenant List<Trajet>
+      final response = await TransportService.fetchTransport(
         nom: _searchQuery.isNotEmpty ? _searchQuery.toUpperCase() : null,
         jour: _jourFiltre,
         prixMax: _prixMax,
-        limit: 200,
+        societe: _societeFiltre,
+        limit: 500,
       );
-      setState(() {
-        _arrets = response.data;
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          // CORRIGÉ : plus de regroupement nécessaire — Trajet est déjà groupé
+          _trajets = response.data;
+          _loading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+      }
     }
   }
 
-  // Group arrets by ligne (Nom) for display as "trajets"
-  List<_TrajetSummary> get _trajetsSummary {
-    final Map<String, _TrajetSummary> map = {};
-    for (final a in _arrets) {
-      if (!map.containsKey(a.nom)) {
-        map[a.nom] = _TrajetSummary(
-          nom: a.nom,
-          ligne: a.ligne,
-          route: a.route,
-          depart: a.depart,
-          destination: a.destination,
-          heureAller: a.aller,
-          heureRetour: a.retour,
-          prix: a.prix,
-          joursActifs: a.joursActifs,
-          nbArrets: 0,
-        );
-      }
-      map[a.nom] = map[a.nom]!.copyWith(nbArrets: map[a.nom]!.nbArrets + 1);
-    }
-    return map.values.toList();
+  // ── Debounce sur la recherche ────────────────────────────────────────────
+  void _onSearchChanged(String value) {
+    setState(() => _searchQuery = value);
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (_searchQuery == value && mounted) _fetchData();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<AppProvider>();
-    final user = provider.currentUser!;
-    final trajets = _trajetsSummary;
+    final user = context.watch<AppProvider>().currentUser!;
 
     return Scaffold(
       backgroundColor: AppTheme.background,
       body: CustomScrollView(
         slivers: [
-          // ── App Bar ──────────────────────────────────────────
+          // ── App Bar ──────────────────────────────────────────────────
           SliverAppBar(
-            expandedHeight: _showFilters ? 260 : 190,
+            expandedHeight: _showFilters ? 290 : 190,
             pinned: true,
             backgroundColor: AppTheme.secondary,
             flexibleSpace: FlexibleSpaceBar(
@@ -172,23 +196,27 @@ class _TrajetsTabState extends State<_TrajetsTab> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // ── Titre + bouton filtres ────────────────────────
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Bonjour, ${user.prenom} ',
-                                style: const TextStyle(
-                                    color: Colors.white70, fontSize: 14)),
-                            const Text('Où allez-vous ?',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold)),
+                            Text(
+                              'Bonjour, ${user.prenom} 👋',
+                              style: const TextStyle(
+                                  color: Colors.white70, fontSize: 14),
+                            ),
+                            const Text(
+                              'Où allez-vous ?',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold),
+                            ),
                           ],
                         ),
-                        // Filter toggle button
                         IconButton(
                           onPressed: () =>
                               setState(() => _showFilters = !_showFilters),
@@ -203,16 +231,12 @@ class _TrajetsTabState extends State<_TrajetsTab> {
                       ],
                     ),
                     const SizedBox(height: 10),
-                    // Search bar
+
+                    // ── Barre de recherche ────────────────────────────
                     TextField(
                       controller: _searchCtrl,
-                      onChanged: (v) {
-                        setState(() => _searchQuery = v);
-                        // debounce: fetch after user stops typing
-                        Future.delayed(const Duration(milliseconds: 500), () {
-                          if (_searchQuery == v) _fetchData();
-                        });
-                      },
+                      onChanged: _onSearchChanged,
+                      style: const TextStyle(color: Colors.black87),
                       decoration: InputDecoration(
                         hintText: 'Ex: TUNIS, SFAX, GAFSA...',
                         prefixIcon: const Icon(Icons.search),
@@ -236,10 +260,11 @@ class _TrajetsTabState extends State<_TrajetsTab> {
                       ),
                     ),
 
-                    // ── Filters (collapsible) ──────────────────
+                    // ── Filtres collapsibles ──────────────────────────
                     if (_showFilters) ...[
                       const SizedBox(height: 10),
-                      // Day filter chips
+
+                      // Filtre jours — CORRIGÉ : valeurs 'Lun', 'Mar'…
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
@@ -251,11 +276,10 @@ class _TrajetsTabState extends State<_TrajetsTab> {
                               child: FilterChip(
                                 label: Text(label,
                                     style: TextStyle(
-                                      fontSize: 12,
-                                      color: selected
-                                          ? AppTheme.primary
-                                          : Colors.white,
-                                    )),
+                                        fontSize: 12,
+                                        color: selected
+                                            ? AppTheme.primary
+                                            : Colors.white)),
                                 selected: selected,
                                 onSelected: (_) {
                                   setState(() => _jourFiltre = value);
@@ -272,52 +296,135 @@ class _TrajetsTabState extends State<_TrajetsTab> {
                         ),
                       ),
                       const SizedBox(height: 6),
-                      // Price filter
-                      Row(
-                        children: [
-                          const Icon(Icons.attach_money,
-                              color: Colors.white70, size: 16),
-                          const SizedBox(width: 6),
-                          const Text('Prix max:',
-                              style: TextStyle(
-                                  color: Colors.white70, fontSize: 13)),
-                          const SizedBox(width: 8),
-                          ...[null, 5.0, 10.0, 20.0, 50.0].map((v) {
-                            final selected = _prixMax == v;
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 6),
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() => _prixMax = v);
-                                  _fetchData();
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: selected
-                                        ? Colors.white
-                                        : Colors.white24,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    v == null ? 'Tous' : '${v.toInt()} TND',
-                                    style: TextStyle(
-                                      fontSize: 12,
+
+                      // Filtre prix max
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            const Icon(Icons.attach_money,
+                                color: Colors.white70, size: 16),
+                            const SizedBox(width: 6),
+                            const Text('Prix max :',
+                                style: TextStyle(
+                                    color: Colors.white70, fontSize: 13)),
+                            const SizedBox(width: 8),
+                            ..._prixOptions.map((v) {
+                              final selected = _prixMax == v;
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() => _prixMax = v);
+                                    _fetchData();
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
                                       color: selected
-                                          ? AppTheme.primary
-                                          : Colors.white,
-                                      fontWeight: selected
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
+                                          ? Colors.white
+                                          : Colors.white24,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      v == null ? 'Tous' : '≤ ${v.toInt()} TND',
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: selected
+                                              ? AppTheme.primary
+                                              : Colors.white,
+                                          fontWeight: selected
+                                              ? FontWeight.bold
+                                              : FontWeight.normal),
                                     ),
                                   ),
                                 ),
-                              ),
-                            );
-                          }),
-                        ],
+                              );
+                            }),
+                          ],
+                        ),
                       ),
+
+                      // ── Filtre société — NOUVEAU ──────────────────
+                      if (_societesDisponibles.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              const Icon(Icons.business,
+                                  color: Colors.white70, size: 16),
+                              const SizedBox(width: 6),
+                              const Text('Société :',
+                                  style: TextStyle(
+                                      color: Colors.white70, fontSize: 13)),
+                              const SizedBox(width: 8),
+                              // Option "Toutes"
+                              Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() => _societeFiltre = null);
+                                    _fetchData();
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: _societeFiltre == null
+                                          ? Colors.white
+                                          : Colors.white24,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text('Toutes',
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            color: _societeFiltre == null
+                                                ? AppTheme.primary
+                                                : Colors.white,
+                                            fontWeight: _societeFiltre == null
+                                                ? FontWeight.bold
+                                                : FontWeight.normal)),
+                                  ),
+                                ),
+                              ),
+                              ..._societesDisponibles.map((s) {
+                                final selected = _societeFiltre == s;
+                                final color = _colorForSociete(s);
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 6),
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() => _societeFiltre = s);
+                                      _fetchData();
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            selected ? color : Colors.white24,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: selected
+                                            ? null
+                                            : Border.all(color: Colors.white30),
+                                      ),
+                                      child: Text(s,
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.white,
+                                              fontWeight: selected
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal)),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
                   ],
                 ),
@@ -325,17 +432,18 @@ class _TrajetsTabState extends State<_TrajetsTab> {
             ),
           ),
 
-          // ── Content ──────────────────────────────────────────
+          // ── Contenu principal ─────────────────────────────────────────
           SliverPadding(
             padding: const EdgeInsets.all(16),
-            sliver: _buildContent(trajets),
+            sliver: _buildContent(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildContent(List<_TrajetSummary> trajets) {
+  // ── Builder principal ────────────────────────────────────────────────────
+  Widget _buildContent() {
     if (_loading) {
       return const SliverToBoxAdapter(
         child: Center(
@@ -358,6 +466,10 @@ class _TrajetsTabState extends State<_TrajetsTab> {
               const SizedBox(height: 12),
               const Text('Impossible de charger les trajets',
                   style: TextStyle(fontSize: 16, color: Colors.grey)),
+              const SizedBox(height: 8),
+              Text(_error!,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  textAlign: TextAlign.center),
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: _fetchData,
@@ -370,7 +482,7 @@ class _TrajetsTabState extends State<_TrajetsTab> {
       );
     }
 
-    if (trajets.isEmpty) {
+    if (_trajets.isEmpty) {
       return SliverToBoxAdapter(
         child: Center(
           child: Column(
@@ -385,15 +497,20 @@ class _TrajetsTabState extends State<_TrajetsTab> {
                     : 'Aucun trajet disponible',
                 style: TextStyle(color: Colors.grey[500], fontSize: 16),
               ),
+              if (_societeFiltre != null) ...[
+                const SizedBox(height: 8),
+                Text('Société : $_societeFiltre',
+                    style: TextStyle(color: Colors.grey[400], fontSize: 13)),
+              ],
             ],
           ),
         ),
       );
     }
 
-    // Total found badge
     return SliverMainAxisGroup(
       slivers: [
+        // Compteur + badge société active
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.only(bottom: 12),
@@ -407,22 +524,42 @@ class _TrajetsTabState extends State<_TrajetsTab> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '${trajets.length} trajet${trajets.length > 1 ? 's' : ''} trouvé${trajets.length > 1 ? 's' : ''}',
+                    '${_trajets.length} trajet${_trajets.length > 1 ? 's' : ''} '
+                    'trouvé${_trajets.length > 1 ? 's' : ''}',
                     style: const TextStyle(
-                      color: AppTheme.primary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
+                        color: AppTheme.primary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600),
                   ),
                 ),
+                if (_societeFiltre != null) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _colorForSociete(_societeFiltre).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      _societeFiltre!,
+                      style: TextStyle(
+                          color: _colorForSociete(_societeFiltre),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
         ),
+
+        // CORRIGÉ : SliverList sur List<Trajet> directement
         SliverList(
           delegate: SliverChildBuilderDelegate(
-            (_, i) => _ApiTrajetCard(trajet: trajets[i]),
-            childCount: trajets.length,
+            (_, i) => _TrajetCard(trajet: _trajets[i]),
+            childCount: _trajets.length,
           ),
         ),
       ],
@@ -431,75 +568,42 @@ class _TrajetsTabState extends State<_TrajetsTab> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Data class for grouped trajet summary
+// Carte trajet Firestore — reçoit un Trajet (plus _TrajetSummary)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _TrajetSummary {
-  final String nom;
-  final String ligne;
-  final String route;
-  final String depart;
-  final String destination;
-  final String heureAller;
-  final String heureRetour;
-  final double prix;
-  final List<String> joursActifs;
-  final int nbArrets;
-
-  const _TrajetSummary({
-    required this.nom,
-    required this.ligne,
-    required this.route,
-    required this.depart,
-    required this.destination,
-    required this.heureAller,
-    required this.heureRetour,
-    required this.prix,
-    required this.joursActifs,
-    required this.nbArrets,
-  });
-
-  _TrajetSummary copyWith({int? nbArrets}) => _TrajetSummary(
-        nom: nom,
-        ligne: ligne,
-        route: route,
-        depart: depart,
-        destination: destination,
-        heureAller: heureAller,
-        heureRetour: heureRetour,
-        prix: prix,
-        joursActifs: joursActifs,
-        nbArrets: nbArrets ?? this.nbArrets,
-      );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Card for API trajet
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _ApiTrajetCard extends StatelessWidget {
-  final _TrajetSummary trajet;
-  const _ApiTrajetCard({required this.trajet});
+class _TrajetCard extends StatelessWidget {
+  // CORRIGÉ : Trajet au lieu de _TrajetSummary
+  final Trajet trajet;
+  const _TrajetCard({required this.trajet});
 
   @override
   Widget build(BuildContext context) {
+    final societeColor = _colorForSociete(trajet.societe);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          // TODO: navigate to detail page if needed
-          // Navigator.push(context, MaterialPageRoute(
-          //   builder: (_) => TransportDetailPage(trajet: trajet)));
-        },
+        onTap: () => ReservationBottomSheet.show(
+          context,
+          trajetNom: trajet.nom,
+          ligne: trajet.ligne,
+          depart: trajet.departDisplay, // CORRIGÉ : getter sécurisé
+          destination: trajet.destinationDisplay, // CORRIGÉ : getter sécurisé
+          heureAller: trajet.heureAller, // CORRIGÉ : heureAller
+          heureRetour: trajet.heureRetour, // CORRIGÉ : heureRetour
+          prix: trajet.prix,
+          joursActifs: trajet.joursActifs,
+        ),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Header row ──────────────────────────────────
+              // ── Ligne + Route + Société + Nb arrêts ──────────────────
               Row(
                 children: [
-                  // Ligne badge
+                  // Badge ligne
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -515,8 +619,9 @@ class _ApiTrajetCard extends StatelessWidget {
                           fontWeight: FontWeight.w600),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  // Route badge
+                  const SizedBox(width: 6),
+
+                  // Badge route
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -530,10 +635,33 @@ class _ApiTrajetCard extends StatelessWidget {
                           fontSize: 11, color: AppTheme.textGrey),
                     ),
                   ),
+                  const SizedBox(width: 6),
+
+                  // Badge société — NOUVEAU
+                  if (trajet.societe.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: societeColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border:
+                            Border.all(color: societeColor.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        trajet.societe,
+                        style: TextStyle(
+                            fontSize: 10,
+                            color: societeColor,
+                            fontWeight: FontWeight.w700),
+                      ),
+                    ),
+
                   const Spacer(),
-                  // Nb arrêts
+
+                  // CORRIGÉ : arrets.length au lieu de nbArrets
                   Text(
-                    '${trajet.nbArrets} arrêts',
+                    '${trajet.arrets.length} arrêts',
                     style:
                         const TextStyle(fontSize: 11, color: AppTheme.textGrey),
                   ),
@@ -542,10 +670,9 @@ class _ApiTrajetCard extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // ── Route row ────────────────────────────────────
+              // ── Départ → Destination ──────────────────────────────────
               Row(
                 children: [
-                  // Depart
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -553,44 +680,58 @@ class _ApiTrajetCard extends StatelessWidget {
                         const Text('Départ',
                             style: TextStyle(
                                 fontSize: 11, color: AppTheme.textGrey)),
-                        Text(trajet.depart,
-                            style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.textDark)),
-                        Text(trajet.heureAller,
-                            style: const TextStyle(
-                                fontSize: 13,
-                                color: AppTheme.primary,
-                                fontWeight: FontWeight.w500)),
+                        Text(
+                          // CORRIGÉ : departDisplay (getter sécurisé)
+                          trajet.departDisplay,
+                          style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textDark),
+                        ),
+                        Text(
+                          // CORRIGÉ : heureAller (plus .aller)
+                          trajet.heureAller.isNotEmpty
+                              ? trajet.heureAller
+                              : '—',
+                          style: const TextStyle(
+                              fontSize: 13,
+                              color: AppTheme.primary,
+                              fontWeight: FontWeight.w500),
+                        ),
                       ],
                     ),
                   ),
-                  // Arrow
                   const Column(
                     children: [
                       Icon(Icons.arrow_forward,
                           color: AppTheme.textGrey, size: 20),
                     ],
                   ),
-                  // Destination
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        const Text('Arrivée',
+                        const Text('Retour',
                             style: TextStyle(
                                 fontSize: 11, color: AppTheme.textGrey)),
-                        Text(trajet.destination,
-                            style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.textDark)),
-                        Text(trajet.heureRetour,
-                            style: const TextStyle(
-                                fontSize: 13,
-                                color: AppTheme.primary,
-                                fontWeight: FontWeight.w500)),
+                        Text(
+                          // CORRIGÉ : destinationDisplay (getter sécurisé)
+                          trajet.destinationDisplay,
+                          style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textDark),
+                        ),
+                        Text(
+                          // CORRIGÉ : heureRetour (plus .retour)
+                          trajet.heureRetour.isNotEmpty
+                              ? trajet.heureRetour
+                              : '—',
+                          style: const TextStyle(
+                              fontSize: 13,
+                              color: AppTheme.primary,
+                              fontWeight: FontWeight.w500),
+                        ),
                       ],
                     ),
                   ),
@@ -601,30 +742,31 @@ class _ApiTrajetCard extends StatelessWidget {
               const Divider(height: 1),
               const SizedBox(height: 12),
 
-              // ── Footer row ───────────────────────────────────
+              // ── Jours actifs + Prix ───────────────────────────────────
               Row(
                 children: [
-                  // Jours actifs
-                  Wrap(
-                    spacing: 4,
-                    children: trajet.joursActifs
-                        .map((j) => Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppTheme.success.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(j,
-                                  style: const TextStyle(
-                                      fontSize: 10,
-                                      color: AppTheme.success,
-                                      fontWeight: FontWeight.w600)),
-                            ))
-                        .toList(),
+                  Expanded(
+                    child: Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: trajet.joursActifs.map((j) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppTheme.success.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(j,
+                              style: const TextStyle(
+                                  fontSize: 10,
+                                  color: AppTheme.success,
+                                  fontWeight: FontWeight.w600)),
+                        );
+                      }).toList(),
+                    ),
                   ),
-                  const Spacer(),
-                  // Prix
+                  const SizedBox(width: 8),
                   Text(
                     '${trajet.prix.toStringAsFixed(2)} TND',
                     style: const TextStyle(
@@ -643,7 +785,7 @@ class _ApiTrajetCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Keep original _TrajetCard for Firestore-based trajets (Mes Voyages etc.)
+// TrajetCard Firestore — utilisée dans MesVoyagesPage etc. (inchangée)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class TrajetCard extends StatelessWidget {
@@ -757,7 +899,7 @@ class TrajetCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        const Text('Arrivée',
+                        const Text('Retour',
                             style: TextStyle(
                                 fontSize: 11, color: AppTheme.textGrey)),
                         Text(trajet.destination,

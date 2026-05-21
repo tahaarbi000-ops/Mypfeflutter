@@ -11,6 +11,7 @@ class TrajetModel {
   String controleurId; // may be empty if not yet assigned
   int placesTotal;
   int placesRestantes;
+  String societe;
 
   TrajetModel({
     required this.id,
@@ -25,6 +26,7 @@ class TrajetModel {
     required this.controleurId,
     required this.placesTotal,
     required this.placesRestantes,
+    required this.societe,
   });
 
   Map<String, dynamic> toMap() => {
@@ -40,6 +42,7 @@ class TrajetModel {
         'controleurId': controleurId,
         'placesTotal': placesTotal,
         'placesRestantes': placesRestantes,
+        'societe':societe,
       };
 
   factory TrajetModel.fromMap(Map<String, dynamic> map) => TrajetModel(
@@ -55,6 +58,7 @@ class TrajetModel {
         controleurId: map['controleurId'] as String? ?? '',
         placesTotal: (map['placesTotal'] as num?)?.toInt() ?? 0,
         placesRestantes: (map['placesRestantes'] as num?)?.toInt() ?? 0,
+        societe: (map['societe'] as String? ?? '')
       );
 }
 

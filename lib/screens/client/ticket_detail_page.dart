@@ -1,201 +1,309 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:qr_flutter/qr_flutter.dart';
-import '../../models/trajet_model.dart';
-import '../../services/app_provider.dart';
-import '../../utils/app_theme.dart';
-import '../../widgets/app_widgets.dart';
+// lib/pages/client/ticket_page.dart
 
-class TicketDetailPage extends StatelessWidget {
-  final TicketModel ticket;
-  const TicketDetailPage({super.key, required this.ticket});
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import '../../utils/app_theme.dart';
+
+class TicketPage extends StatelessWidget {
+  final String ticketId;
+  final String depart;
+  final String destination;
+  final String ligne;
+  final String heureAller;
+  final double prix;
+  final List<String> joursActifs;
+  final DateTime dateVoyage; // ← nouveau
+
+  const TicketPage({
+    super.key,
+    required this.ticketId,
+    required this.depart,
+    required this.destination,
+    required this.ligne,
+    required this.heureAller,
+    required this.prix,
+    required this.joursActifs,
+    required this.dateVoyage, // ← nouveau
+  });
 
   @override
   Widget build(BuildContext context) {
-    final trajet = context.read<AppProvider>().getTrajetById(ticket.trajetId);
+    final dateFormatee =
+        DateFormat('EEEE d MMMM yyyy', 'fr').format(dateVoyage); // ← formatage
 
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text('Mon billet'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share_outlined),
-            onPressed: () => AppWidgets.showSuccess(
-                context, 'Partage non disponible en démo'),
-          ),
-        ],
+        backgroundColor: AppTheme.primary,
+        foregroundColor: Colors.white,
+        title: const Text('Mon Ticket'),
+        elevation: 0,
+        automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            // Billet stylisé
+            const SizedBox(height: 16),
+
+            // ── Icône succès ──────────────────────────────────────────
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: AppTheme.success.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check_circle_rounded,
+                  size: 48, color: AppTheme.success),
+            ),
+            const SizedBox(height: 14),
+
+            const Text(
+              'Réservation confirmée !',
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textDark),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Présentez ce QR code au contrôleur',
+              style: TextStyle(fontSize: 13, color: AppTheme.textGrey),
+            ),
+            const SizedBox(height: 32),
+
+            // ── Carte ticket ──────────────────────────────────────────
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8))
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 24,
+                    offset: const Offset(0, 6),
+                  ),
                 ],
               ),
-              clipBehavior: Clip.antiAlias,
               child: Column(
                 children: [
-                  // Header coloré
+                  // ── En-tête coloré ──────────────────────────────────
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [AppTheme.secondary, Color(0xFF2A4A6B)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      color: AppTheme.primary,
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(20)),
                     ),
                     child: Column(
                       children: [
+                        // Badge ligne
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'Ligne $ligne',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // ── Date du voyage ──────────────────────────── ← nouveau
                         Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Row(children: [
-                                Icon(Icons.directions_bus_rounded,
-                                    color: Colors.white, size: 20),
-                                SizedBox(width: 8),
-                                Text('TuniMove',
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold)),
-                              ]),
-                              AppWidgets.statutBadge(ticket.statut),
-                            ]),
-                        const SizedBox(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            _stopCol(trajet?.depart ?? '—',
-                                trajet?.heureDepart ?? '—', true),
-                            const Column(children: [
-                              Icon(Icons.arrow_forward_rounded,
-                                  color: Colors.white70, size: 28),
-                              SizedBox(height: 4),
-                              Text('Billet',
-                                  style: TextStyle(
-                                      color: Colors.white38, fontSize: 10)),
-                            ]),
-                            _stopCol(trajet?.destination ?? '—',
-                                trajet?.heureArrivee ?? '—', false),
+                            const Icon(Icons.calendar_today_rounded,
+                                size: 14, color: Colors.white70),
+                            const SizedBox(width: 6),
+                            Text(
+                              dateFormatee,
+                              style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Départ ─→ Destination
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Départ',
+                                      style: TextStyle(
+                                          color: Colors.white60,
+                                          fontSize: 11)),
+                                  Text(depart,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold)),
+                                  Text(heureAller,
+                                      style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 13)),
+                                ],
+                              ),
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 8),
+                              child: Icon(Icons.arrow_forward_rounded,
+                                  color: Colors.white60, size: 22),
+                            ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  const Text('Arrivée',
+                                      style: TextStyle(
+                                          color: Colors.white60,
+                                          fontSize: 11)),
+                                  Text(destination,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                       ],
                     ),
                   ),
-                  // Séparateur billet
-                  AppWidgets.ticketDivider(),
-                  // Corps du billet
+
+                  // ── Séparateur en pointillés ────────────────────────
+                  _DashedDivider(),
+
+                  // ── QR code ─────────────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 24, horizontal: 24),
+                    child: Column(
+                      children: [
+                        QrImageView(
+                          data: ticketId,
+                          version: QrVersions.auto,
+                          size: 190,
+                          eyeStyle: const QrEyeStyle(
+                            eyeShape: QrEyeShape.square,
+                            color: AppTheme.primary,
+                          ),
+                          dataModuleStyle: const QrDataModuleStyle(
+                            dataModuleShape: QrDataModuleShape.square,
+                            color: AppTheme.textDark,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Référence courte
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppTheme.background,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            ticketId.substring(0, 8).toUpperCase(),
+                            style: const TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 15,
+                              letterSpacing: 3,
+                              color: AppTheme.textDark,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // ── Séparateur en pointillés ────────────────────────
+                  _DashedDivider(),
+
+                  // ── Infos bas de ticket ──────────────────────────────
                   Padding(
                     padding: const EdgeInsets.all(20),
                     child: Column(
                       children: [
-                        // Infos passager
-                        Row(children: [
-                          AppWidgets.avatar(
-                            ticket.clientNom.split(' ').first,
-                            ticket.clientNom.split(' ').last,
-                            radius: 22,
-                          ),
-                          const SizedBox(width: 12),
-                          Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Passager',
-                                    style: TextStyle(
-                                        fontSize: 11,
-                                        color: AppTheme.textGrey)),
-                                Text(ticket.clientNom,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15)),
-                              ]),
-                        ]),
-                        const SizedBox(height: 16),
-                        Row(children: [
-                          Expanded(
-                              child: _infoCol(
-                                  'Date', trajet?.date ?? ticket.dateAchat)),
-                          Expanded(
-                              child: _infoCol('Prix',
-                                  '${ticket.prix.toStringAsFixed(3)} TND')),
-                          Expanded(
-                              child: _infoCol('Acheté le', ticket.dateAchat)),
-                        ]),
-                        const SizedBox(height: 20),
-                        // QR Code centré
+                        // Date voyage ← nouveau
+                        _InfoRow(
+                          label: 'Date du voyage',
+                          value: DateFormat('dd/MM/yyyy').format(dateVoyage),
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Prix
+                        _InfoRow(
+                          label: 'Prix payé',
+                          value: '${prix.toStringAsFixed(2)} TND',
+                          valueStyle: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: AppTheme.textDark),
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Jours valides
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Jours valides',
+                                style: TextStyle(
+                                    color: AppTheme.textGrey, fontSize: 13)),
+                            Wrap(
+                              spacing: 4,
+                              children: joursActifs
+                                  .map((j) => Text(
+                                        j,
+                                        style: const TextStyle(
+                                            color: AppTheme.success,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600),
+                                      ))
+                                  .toList(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Badge statut
                         Container(
-                          padding: const EdgeInsets.all(16),
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
-                            color: AppTheme.background,
-                            borderRadius: BorderRadius.circular(16),
+                            color: AppTheme.success.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Column(
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              if (ticket.statut == 'valide')
-                                QrImageView(
-                                  data: ticket.id,
-                                  version: QrVersions.auto,
-                                  size: 200,
-                                  backgroundColor: Colors.white,
-                                  eyeStyle: const QrEyeStyle(
-                                      eyeShape: QrEyeShape.square,
-                                      color: AppTheme.secondary),
-                                  dataModuleStyle: const QrDataModuleStyle(
-                                      dataModuleShape: QrDataModuleShape.square,
-                                      color: AppTheme.secondary),
-                                )
-                              else
-                                SizedBox(
-                                  width: 200,
-                                  height: 200,
-                                  child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(Icons.qr_code,
-                                            size: 64, color: Colors.grey[300]),
-                                        const SizedBox(height: 12),
-                                        Text(
-                                          ticket.statut == 'utilise'
-                                              ? 'Ticket déjà utilisé'
-                                              : 'Ticket expiré',
-                                          style: TextStyle(
-                                              color: Colors.grey[400],
-                                              fontSize: 14),
-                                        ),
-                                      ]),
-                                ),
-                              const SizedBox(height: 12),
+                              Icon(Icons.verified_rounded,
+                                  size: 16, color: AppTheme.success),
+                              SizedBox(width: 6),
                               Text(
-                                ticket.id
-                                    .toUpperCase()
-                                    .replaceRange(8, null, '...'),
-                                style: const TextStyle(
-                                  fontFamily: 'monospace',
-                                  fontSize: 13,
-                                  letterSpacing: 2,
-                                  color: AppTheme.textGrey,
-                                ),
+                                'TICKET VALIDE',
+                                style: TextStyle(
+                                    color: AppTheme.success,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.5),
                               ),
-                              if (ticket.statut == 'valide') ...[
-                                const SizedBox(height: 8),
-                                const Text(
-                                  'Présentez ce QR code au contrôleur',
-                                  style: TextStyle(
-                                      fontSize: 12, color: AppTheme.textGrey),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
                             ],
                           ),
                         ),
@@ -205,80 +313,107 @@ class TicketDetailPage extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-            // Infos complémentaires
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Conditions d\'utilisation',
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 12),
-                    _conditionItem(Icons.info_outline,
-                        'Ce billet est strictement personnel et non transférable.'),
-                    _conditionItem(Icons.qr_code,
-                        'Le QR code est unique et ne peut être scanné qu\'une seule fois.'),
-                    _conditionItem(Icons.schedule,
-                        'Présentez-vous 10 minutes avant le départ.'),
-                    _conditionItem(Icons.cancel_outlined,
-                        'Annulation possible jusqu\'à 2h avant le départ.'),
-                  ],
+            const SizedBox(height: 32),
+
+            // ── Bouton retour accueil ─────────────────────────────────
+            SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: ElevatedButton.icon(
+                onPressed: () =>
+                    Navigator.of(context).popUntil((r) => r.isFirst),
+                icon: const Icon(Icons.home_rounded),
+                label: const Text(
+                  "Retour à l'accueil",
+                  style:
+                      TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
                 ),
               ),
             ),
+            const SizedBox(height: 12),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _stopCol(String lieu, String heure, bool isDepart) {
-    return Column(
-      crossAxisAlignment:
-          isDepart ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+// ─── Widgets helpers ───────────────────────────────────────────────────────
+
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final TextStyle? valueStyle;
+
+  const _InfoRow({
+    required this.label,
+    required this.value,
+    this.valueStyle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(isDepart ? 'DÉPART' : 'ARRIVÉE',
-            style: const TextStyle(
-                color: Colors.white54, fontSize: 10, letterSpacing: 1)),
-        const SizedBox(height: 4),
-        Text(lieu,
-            style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 14)),
-        Text(heure,
-            style: const TextStyle(
-                color: AppTheme.primary,
-                fontSize: 22,
-                fontWeight: FontWeight.bold)),
+        Text(label,
+            style:
+                const TextStyle(color: AppTheme.textGrey, fontSize: 13)),
+        Text(value,
+            style: valueStyle ??
+                const TextStyle(color: AppTheme.textDark, fontSize: 14)),
       ],
     );
   }
+}
 
-  Widget _infoCol(String label, String value) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label,
-          style: const TextStyle(fontSize: 11, color: AppTheme.textGrey)),
-      const SizedBox(height: 2),
-      Text(value,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-    ]);
-  }
-
-  Widget _conditionItem(IconData icon, String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(icon, size: 16, color: AppTheme.textGrey),
-        const SizedBox(width: 8),
+/// Séparateur en pointillés avec encoches sur les côtés (effet ticket de bus)
+class _DashedDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 22,
+          height: 22,
+          decoration: BoxDecoration(
+            color: AppTheme.background,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+        ),
         Expanded(
-            child: Text(text,
-                style: const TextStyle(
-                    fontSize: 12, color: AppTheme.textGrey, height: 1.4))),
-      ]),
+          child: LayoutBuilder(
+            builder: (_, constraints) {
+              final count = (constraints.maxWidth / 10).floor();
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: List.generate(
+                  count,
+                  (_) => Container(
+                      width: 5, height: 1, color: Colors.grey[300]),
+                ),
+              );
+            },
+          ),
+        ),
+        Container(
+          width: 22,
+          height: 22,
+          decoration: BoxDecoration(
+            color: AppTheme.background,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+        ),
+      ],
     );
   }
 }

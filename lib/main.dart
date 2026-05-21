@@ -1,36 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 import 'services/app_provider.dart';
 import 'utils/app_theme.dart';
 import 'screens/auth/onboarding_page.dart';
+import 'screens/auth/login_page.dart';
 import 'screens/client/home_page.dart';
 import 'screens/controleur/controleur_home_page.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const TuniMoveApp());
+
+  final prefs = await SharedPreferences.getInstance();
+  final seenOnboarding = prefs.getBool('seen_onboarding') ?? false;
+
+  runApp(TuniMoveApp(showOnboarding: !seenOnboarding));
 }
 
 class TuniMoveApp extends StatelessWidget {
-  const TuniMoveApp({super.key});
+  final bool showOnboarding;
+  const TuniMoveApp({super.key, required this.showOnboarding});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => AppProvider(),
       child: MaterialApp(
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        supportedLocales: const [Locale('fr')],
         title: 'TuniMove',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.theme,
-        // Register '/' so LoginPage can navigate back to AuthGate
         initialRoute: '/',
         routes: {
-          '/': (context) => const AuthGate(),
+          '/': (context) => AuthGate(showOnboarding: showOnboarding),
         },
       ),
     );
@@ -38,7 +47,8 @@ class TuniMoveApp extends StatelessWidget {
 }
 
 class AuthGate extends StatelessWidget {
-  const AuthGate({super.key});
+  final bool showOnboarding;
+  const AuthGate({super.key, required this.showOnboarding});
 
   @override
   Widget build(BuildContext context) {
@@ -51,8 +61,9 @@ class AuthGate extends StatelessWidget {
       );
     }
 
+    // Not logged in → onboarding (first time) or login (returning)
     if (!provider.isLoggedIn) {
-      return const OnboardingPage();
+      return showOnboarding ? const OnboardingPage() : const LoginPage();
     }
 
     if (provider.isClient) {

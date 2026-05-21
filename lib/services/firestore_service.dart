@@ -188,30 +188,35 @@ class FirestoreService {
         region: 'Tunis', date: '2025-04-20', heureDepart: '08:00',
         heureArrivee: '11:30', prix: 25.0, statut: 'planifie',
         controleurId: controleurId, placesTotal: 50, placesRestantes: 32,
+        societe: 'SNTRI',
       ),
       TrajetModel(
         id: uuid.v4(), depart: 'Sousse', destination: 'Monastir',
         region: 'Sousse', date: '2025-04-20', heureDepart: '09:30',
         heureArrivee: '10:00', prix: 5.0, statut: 'planifie',
         controleurId: controleurId, placesTotal: 30, placesRestantes: 15,
+        societe:'STS', 
       ),
       TrajetModel(
         id: uuid.v4(), depart: 'Nabeul', destination: 'Hammamet',
         region: 'Nabeul', date: '2025-04-21', heureDepart: '14:00',
         heureArrivee: '14:45', prix: 3.5, statut: 'planifie',
         controleurId: controleurId, placesTotal: 25, placesRestantes: 20,
+        societe:'SRTGN', 
       ),
       TrajetModel(
         id: uuid.v4(), depart: 'Bizerte', destination: 'Tunis Nord',
         region: 'Bizerte', date: '2025-04-21', heureDepart: '07:00',
         heureArrivee: '08:30', prix: 8.0, statut: 'planifie',
         controleurId: controleurId, placesTotal: 40, placesRestantes: 18,
+        societe:'STB', 
       ),
       TrajetModel(
         id: uuid.v4(), depart: 'Gabès', destination: 'Médenine',
         region: 'Gabès', date: '2025-04-22', heureDepart: '10:00',
         heureArrivee: '11:15', prix: 7.0, statut: 'planifie',
         controleurId: controleurId, placesTotal: 35, placesRestantes: 22,
+        societe:'STOREGAMES', 
       ),
     ];
 

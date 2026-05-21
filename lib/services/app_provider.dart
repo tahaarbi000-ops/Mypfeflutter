@@ -33,11 +33,31 @@ class AppProvider extends ChangeNotifier {
   String get regionFiltre => _regionFiltre;
 
   static const List<String> regions = [
-    'Toutes', 'Tunis', 'Ariana', 'Ben Arous', 'Manouba',
-    'Nabeul', 'Zaghouan', 'Bizerte', 'Béja', 'Jendouba',
-    'Le Kef', 'Siliana', 'Kairouan', 'Kasserine', 'Sidi Bouzid',
-    'Sousse', 'Monastir', 'Mahdia', 'Sfax', 'Gafsa',
-    'Tozeur', 'Kébili', 'Gabès', 'Médenine', 'Tataouine',
+    'Toutes',
+    'Tunis',
+    'Ariana',
+    'Ben Arous',
+    'Manouba',
+    'Nabeul',
+    'Zaghouan',
+    'Bizerte',
+    'Béja',
+    'Jendouba',
+    'Le Kef',
+    'Siliana',
+    'Kairouan',
+    'Kasserine',
+    'Sidi Bouzid',
+    'Sousse',
+    'Monastir',
+    'Mahdia',
+    'Sfax',
+    'Gafsa',
+    'Tozeur',
+    'Kébili',
+    'Gabès',
+    'Médenine',
+    'Tataouine',
   ];
 
   AppProvider() {
@@ -46,7 +66,8 @@ class AppProvider extends ChangeNotifier {
 
   void _listenToAuth() {
     _authSub = _authService.authStateChanges.listen((firebaseUser) async {
-      debugPrint('🔐 Auth state changed: ${firebaseUser?.uid ?? "null (logged out)"}');
+      debugPrint(
+          '🔐 Auth state changed: ${firebaseUser?.uid ?? "null (logged out)"}');
 
       if (firebaseUser != null) {
         // Retry up to 3 times — Firestore can be slow on cold start
@@ -55,6 +76,7 @@ class AppProvider extends ChangeNotifier {
           try {
             debugPrint('📦 Fetching Firestore user, attempt $attempt...');
             user = await _authService.getUserById(firebaseUser.uid);
+            print(firebaseUser.uid);
             if (user != null) {
               debugPrint('✅ User loaded: ${user.role}');
               break;
@@ -74,7 +96,8 @@ class AppProvider extends ChangeNotifier {
           _subscribeToData();
         } else {
           // Firestore doc doesn't exist — sign out to avoid stuck state
-          debugPrint('🚫 No Firestore doc found after 3 attempts. Signing out.');
+          debugPrint(
+              '🚫 No Firestore doc found after 3 attempts. Signing out.');
           _currentUser = null;
           await _authService.signOut();
         }
@@ -105,7 +128,8 @@ class AppProvider extends ChangeNotifier {
       notifyListeners();
     });
     if (isClient && _currentUser != null) {
-      _ticketsSub = _firestoreService.ticketsByClient(_currentUser!.id).listen((data) {
+      _ticketsSub =
+          _firestoreService.ticketsByClient(_currentUser!.id).listen((data) {
         _tickets = data;
         notifyListeners();
       });
@@ -137,7 +161,8 @@ class AppProvider extends ChangeNotifier {
   }
 
   List<TicketModel> get mesTickets => _tickets;
-  List<TicketModel> get ticketsScannesToday => _tickets.where((t) => t.scanne).toList();
+  List<TicketModel> get ticketsScannesToday =>
+      _tickets.where((t) => t.scanne).toList();
 
   TrajetModel? get trajetActuel {
     if (_currentUser == null) return null;
@@ -145,11 +170,17 @@ class AppProvider extends ChangeNotifier {
       return _trajets.firstWhere(
         (t) => t.controleurId == _currentUser!.id && t.statut == 'en_cours',
       );
-    } catch (_) { return null; }
+    } catch (_) {
+      return null;
+    }
   }
 
   TrajetModel? getTrajetById(String id) {
-    try { return _trajets.firstWhere((t) => t.id == id); } catch (_) { return null; }
+    try {
+      return _trajets.firstWhere((t) => t.id == id);
+    } catch (_) {
+      return null;
+    }
   }
 
   // ─── AUTH ────────────────────────────────────────────────────────────
@@ -166,14 +197,22 @@ class AppProvider extends ChangeNotifier {
   }
 
   Future<String?> inscrire({
-    required String nom, required String prenom, required String email,
-    required String telephone, required String motDePasse, required String role,
+    required String nom,
+    required String prenom,
+    required String email,
+    required String telephone,
+    required String motDePasse,
+    required String role,
   }) async {
     _setLoading(true);
     try {
       await _authService.signUp(
-        nom: nom, prenom: prenom, email: email,
-        telephone: telephone, password: motDePasse, role: role,
+        nom: nom,
+        prenom: prenom,
+        email: email,
+        telephone: telephone,
+        password: motDePasse,
+        role: role,
       );
       _setLoading(false);
       return null;
@@ -186,28 +225,46 @@ class AppProvider extends ChangeNotifier {
   Future<void> logout() async => _authService.signOut();
 
   Future<String?> resetPassword(String email) async {
-    try { await _authService.resetPassword(email); return null; }
-    catch (e) { return e.toString(); }
+    try {
+      await _authService.resetPassword(email);
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
   }
 
   // ─── PROFIL ──────────────────────────────────────────────────────────
   Future<String?> mettreAJourProfil({
-    String? nom, String? prenom, String? telephone,
-    String? motDePasse, File? photo,
+    String? nom,
+    String? prenom,
+    String? telephone,
+    String? motDePasse,
+    File? photo,
   }) async {
     if (_currentUser == null) return 'Non connecté';
     _setLoading(true);
     try {
       final updates = <String, dynamic>{};
-      if (nom != null) { updates['nom'] = nom; _currentUser!.nom = nom; }
-      if (prenom != null) { updates['prenom'] = prenom; _currentUser!.prenom = prenom; }
-      if (telephone != null) { updates['telephone'] = telephone; _currentUser!.telephone = telephone; }
+      if (nom != null) {
+        updates['nom'] = nom;
+        _currentUser!.nom = nom;
+      }
+      if (prenom != null) {
+        updates['prenom'] = prenom;
+        _currentUser!.prenom = prenom;
+      }
+      if (telephone != null) {
+        updates['telephone'] = telephone;
+        _currentUser!.telephone = telephone;
+      }
       if (photo != null) {
-        final url = await _storageService.uploadProfilePhoto(_currentUser!.id, photo);
+        final url =
+            await _storageService.uploadProfilePhoto(_currentUser!.id, photo);
         updates['photoUrl'] = url;
         _currentUser!.photoUrl = url;
       }
-      if (updates.isNotEmpty) await _firestoreService.updateUser(_currentUser!.id, updates);
+      if (updates.isNotEmpty)
+        await _firestoreService.updateUser(_currentUser!.id, updates);
       if (motDePasse != null && motDePasse.isNotEmpty) {
         await _authService.updatePassword(motDePasse);
       }
@@ -223,14 +280,17 @@ class AppProvider extends ChangeNotifier {
   Future<String?> uploadProfilePhoto() async {
     if (_currentUser == null) return 'Non connecté';
     try {
-      final url = await _storageService.pickAndUploadProfilePhoto(_currentUser!.id);
+      final url =
+          await _storageService.pickAndUploadProfilePhoto(_currentUser!.id);
       if (url != null) {
         _currentUser!.photoUrl = url;
         await _firestoreService.updateUser(_currentUser!.id, {'photoUrl': url});
         notifyListeners();
       }
       return null;
-    } catch (e) { return e.toString(); }
+    } catch (e) {
+      return e.toString();
+    }
   }
 
   // ─── FILTRAGE ────────────────────────────────────────────────────────
@@ -253,7 +313,9 @@ class AppProvider extends ChangeNotifier {
         prix: trajet.prix,
       );
       return null;
-    } catch (e) { return e.toString(); }
+    } catch (e) {
+      return e.toString();
+    }
   }
 
   Future<String?> scannerTicket(String ticketId) =>
@@ -267,22 +329,33 @@ class AppProvider extends ChangeNotifier {
     try {
       await _firestoreService.demarrerTrajet(trajetId);
       _ticketsSub?.cancel();
-      _ticketsSub = _firestoreService.ticketsScannsByTrajet(trajetId).listen((data) {
+      _ticketsSub =
+          _firestoreService.ticketsScannsByTrajet(trajetId).listen((data) {
         _tickets = data;
         notifyListeners();
       });
       return null;
-    } catch (e) { return e.toString(); }
+    } catch (e) {
+      return e.toString();
+    }
   }
 
   Future<String?> terminerTrajet(String trajetId) async {
-    try { await _firestoreService.terminerTrajet(trajetId); return null; }
-    catch (e) { return e.toString(); }
+    try {
+      await _firestoreService.terminerTrajet(trajetId);
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
   }
 
-  Future<String?> mettreAJourTrajet(String trajetId, {
-    String? depart, String? destination,
-    String? heureDepart, String? heureArrivee, double? prix,
+  Future<String?> mettreAJourTrajet(
+    String trajetId, {
+    String? depart,
+    String? destination,
+    String? heureDepart,
+    String? heureArrivee,
+    double? prix,
   }) async {
     try {
       final updates = <String, dynamic>{};
@@ -293,8 +366,13 @@ class AppProvider extends ChangeNotifier {
       if (prix != null) updates['prix'] = prix;
       await _firestoreService.updateTrajet(trajetId, updates);
       return null;
-    } catch (e) { return e.toString(); }
+    } catch (e) {
+      return e.toString();
+    }
   }
 
-  void _setLoading(bool val) { _loading = val; notifyListeners(); }
+  void _setLoading(bool val) {
+    _loading = val;
+    notifyListeners();
+  }
 }

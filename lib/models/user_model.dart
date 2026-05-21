@@ -6,7 +6,7 @@ class UserModel {
   String telephone;
   String role; // 'client' or 'controleur'
   String? photoUrl;
-  String motDePasse;
+  String? societe;
 
   UserModel({
     required this.id,
@@ -15,29 +15,29 @@ class UserModel {
     required this.email,
     required this.telephone,
     required this.role,
-    required this.motDePasse,
     this.photoUrl,
+    this.societe,
   });
 
   Map<String, dynamic> toMap() => {
-    'id': id,
-    'nom': nom,
-    'prenom': prenom,
-    'email': email,
-    'telephone': telephone,
-    'role': role,
-    'motDePasse': motDePasse,
-    'photoUrl': photoUrl,
-  };
+        'id': id,
+        'nom': nom,
+        'prenom': prenom,
+        'email': email,
+        'telephone': telephone,
+        'role': role,
+        'photoUrl': photoUrl,
+        'societe': societe,
+      };
 
   factory UserModel.fromMap(Map<String, dynamic> map) => UserModel(
-    id: map['id'],
-    nom: map['nom'],
-    prenom: map['prenom'],
-    email: map['email'],
-    telephone: map['telephone'],
-    role: map['role'],
-    motDePasse: map['motDePasse'],
-    photoUrl: map['photoUrl'],
-  );
+        id: map['id'] as String? ?? '',
+        nom: map['nom'] as String? ?? '',
+        prenom: map['prenom'] as String? ?? '',
+        email: map['email'] as String? ?? '',
+        telephone: map['telephone'] as String? ?? '',
+        role: map['role'] as String? ?? 'client',
+        photoUrl: map['photoUrl'] as String?,
+        societe: map['societe'] as String?,
+      );
 }

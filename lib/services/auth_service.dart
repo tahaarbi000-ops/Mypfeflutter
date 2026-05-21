@@ -48,7 +48,6 @@ class AuthService {
         telephone: telephone,
         role: role,
         photoUrl: null,
-        motDePasse: password,
       );
 
       await _db.collection('users').doc(user.id).set(user.toMap());
